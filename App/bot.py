@@ -82,6 +82,35 @@ async def create_reminder(ctx, days_str, time_str, channel_name, *, message):
             await asyncio.sleep(604800)  # Sleep for 7 days (604,800 seconds) for weekly reminders
 
     bot.loop.create_task(send_reminder())
+    scheduled_tasks[ctx.message.id] = {"task": task, "message": message}  # Store the task and message
+
+@bot.command()
+async def cancel_reminder(ctx, task_id):
+    try:
+        task_id = int(task_id)
+    except ValueError:
+        await ctx.send("Invalid task identifier.")
+        return
+
+    if task_id in scheduled_tasks:
+        task_info = scheduled_tasks[task_id]
+        task = task_info["task"]
+        task.cancel()
+        del scheduled_tasks[task_id]
+        await ctx.send(f"Task with ID {task_id} has been canceled.")
+    else:
+        await ctx.send("Task not found.")
+
+@bot.command()
+async def list_reminders(ctx):
+    if scheduled_tasks:
+        response = "Planned Reminders:\n"
+        for task_id, task_info in scheduled_tasks.items():
+            message = task_info["message"]
+            response += f"ID: {task_id} - Message: {message}\n"
+        await ctx.send(response)
+    else:
+        await ctx.send("No reminders are currently planned.")
 
 #hello world message
 @bot.event
